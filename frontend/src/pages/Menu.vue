@@ -99,12 +99,12 @@
                         <li>
                             <input type="button" name="rPrice" id="mtPrice" value="12" hidden
                                 @click="filterPriceBtn($event)" />
-                            <label for="mtPrice" class="d-flex justify-content-between">{{ ">" }} Rp 12.000 <button
+                            <label for="mtPrice" class="d-flex justify-content-between">{{ ">" }} Rp 120.000 <button
                                     class="unselect-btn" @click="unselectPriceBtn($event)">X</button></label>
                         </li>
 
                         <li>
-                            <input type="button" name="rPrice" id="ltPrice" value="20" hidden
+                            <input type="button" name="rPrice" id="ltPrice" value="2" hidden
                                 @click="filterPriceBtn($event)" />
                             <label for="ltPrice" class="d-flex justify-content-between">{{ "<" }} Rp.20.000 <button
                                     class="unselect-btn" @click="unselectPriceBtn($event)">X</button></label>
@@ -344,27 +344,27 @@ export default {
             this.pageNum = 0;
             var cal = parseFloat(food.food_price) - parseFloat(food.food_discount);
             if (priceRange == "2,5") {
-                if (2 <= cal && cal <= 5) {
+                if (20000 <= cal && cal <= 50000) {
                     return food;
                 }
             }
             else if (priceRange == "5,10") {
-                if (5 <= cal && cal <= 10) {
+                if (50000 <= cal && cal <= 100000) {
                     return food;
                 }
             }
             else if (priceRange == "10,12") {
-                if (10 <= cal && cal <= 12) {
+                if (100000 <= cal && cal <= 120000) {
                     return food;
                 }
             }
             else if (priceRange == "2") {
-                if (cal <= 2) {
+                if (cal <= 20000) {
                     return food;
                 }
             }
             else if (priceRange == "12") {
-                if (cal >= 12) {
+                if (cal >= 120000) {
                     return food;
                 }
             }
