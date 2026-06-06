@@ -1,0 +1,67 @@
+name: Deploy To Canis Major Front End
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+
+jobs:
+  build-and-deploy-frontend:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install Dependencies & Build
+        working-directory: ./frontend
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run build
+
+      - name: Get GitHub Actions Runner IP
+        id: ip
+        run: echo "ipv4=$(curl -s https://api.ipify.org)" >> $GITHUB_OUTPUT
+
+      - name: Whitelist IP on DigitalOcean Firewall
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+            -d '{"inbound_rules": [{"protocol": "tcp", "ports": "${{ secrets.SERVER_PORT }}", "sources": {"addresses": ["${{ steps.ip.outputs.ipv4 }}/32"]}}]}' \
+            "https://api.digitalocean.com/v2/firewalls/${{ secrets.DO_FIREWALL_ID }}/rules"
+          sleep 10
+
+      - name: Copy Build Files to VPS via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: "frontend/dist/*"
+          target: ${{ secrets.FRONTEND_PATH }}
+          strip_components: 2
+
+      - name: Remove IP from DigitalOcean Firewall
+        if: always()
+        run: |
+          curl -X DELETE \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.DO_API_TOKEN }}" \
+            -d '{"inbound_rules": [{"protocol": "tcp", "ports": "${{ secrets.SERVER_PORT }}", "sources": {"addresses": ["${{ steps.ip.outputs.ipv4 }}/32"]}}]}' \
+            "https://api.digitalocean.com/v2/firewalls/${{ secrets.DO_FIREWALL_ID }}/rules"
